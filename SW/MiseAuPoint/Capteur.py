@@ -17,36 +17,20 @@ from libSystemControl.Estimateur import FiltreKalman
 # Définition des capteurs
 # =============================================
 class Capteur (ACapteur):
-   def __init__(self, iok, biais_mes=False):
-      n = len(iok)
-      self._iok = iok
-      ret = 0
+   def __init__(self):
+      self.std_ang_deg = 1.
+      self.std_gyr_deg = 1./10
+      self.biais_gyr_deg = -5
       
-      self._biais_mes = biais_mes
-
-      if self._biais_mes:
-         bias_mes_deg = 5.
-      else:
-         bias_mes_deg = 0.
-      
-      std_mes_deg = 1.
-      
-      moy = np.matrix([bias_mes_deg*np.pi/180.]*n).T
-      cov = np.matrix(np.diag([(std_mes_deg*np.pi/180.)**2]*n))
-      ACapteur.__init__(self, u'capteur%i' % n, moy, cov)
-      
-      # Introduction d'un retard dans la valeur mesuree de 5 pas de temps
-      self._buf_mes = collections.deque(maxlen=ret+1)
+      moy = np.matrix([0., self.biais_gyr_deg*np.pi/180.]).T
+      cov = np.matrix((np.diag([self.std_ang_deg,self.std_gyr_deg])*np.pi/180.)**2)
+      ACapteur.__init__(self, ['th_mes', 'dth_mes'], moy, cov)
       
    def comportement(self, x, t):
-      self._buf_mes.append(x[self._iok,:])
-      return self._buf_mes[0]
+      return x[0:2,:]
 
 
 def test():
-   import matplotlib
-   matplotlib.use('tkagg')
-
    import numpy as np
    import matplotlib.pyplot as plt
    
