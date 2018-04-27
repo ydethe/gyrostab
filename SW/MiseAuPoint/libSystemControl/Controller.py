@@ -10,12 +10,16 @@ import numpy as np
 
 
 class AController (object):
-   def __init__(self, name, dt, sys, capteurs, estimateurs):
-      self._name = name
+   def __init__(self, _name_of_cmd, dt):
+      self._name_of_cmd = _name_of_cmd
       self._dt = dt
-      self._sys = sys
-      self._capteurs = capteurs
-      self._estimateurs = estimateurs
+      self._u = np.matrix([[0.]*len(self._name_of_cmd)])
+   
+   def get_num_cmd(self):
+      return len(self._name_of_cmd)
+      
+   def commande(self, cons, Xest):
+      self._u = self.comportement(cons, Xest)
       
    def comportement(self, cons, Xest):
       u'''Loi de comportement des capteurs
@@ -30,23 +34,15 @@ class AController (object):
          Vecteur de commandes calculees
          
       '''
-      raise SystemError(u"[ERREUR]Methode comportement non implementee pour le controleur '%s'" % self._name)
-      
-   def integre_pas(self, th_c):
-      x,t = self._sys.get_state()
-      self._mes = self._capteurs.mesure(x, t)
-      
-      Xest,t = self._estimateurs.get_estimation()
-      
-      self._u = self.comportement(th_c, Xest)
-      
-      self._estimateurs.comportement(self._mes, self._u, t)
-      
-      self._sys.integre_pas(self._u, self._dt)
+      raise SystemError(u"[ERREUR]Methode comportement non implementee pour le controleur")
       
    def get_last_consigne(self):
       return self._u.copy()
-   
-   def get_last_measurement(self):
-      return self._mes.copy()
       
+   def get_last_consigne_generator(self):
+      u = self.get_last_consigne()
+      for i in range(self.get_num_cmd()):
+         yield self._name_of_cmd[i], u[i,0]
+      
+      
+   

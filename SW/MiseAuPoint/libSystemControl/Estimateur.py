@@ -12,11 +12,22 @@ from scipy import linalg as lin
 
 
 class AEstimateur (object):
-   def __init__(self, name):
-      self._name = name
+   def __init__(self, name_of_states):
+      self._name_of_states = name_of_states
+      
+   def get_num_states(self):
+      return len(self._xest)
+      
+   def set_state(self, x, P, t):
+      raise SystemError(u"[ERREUR]Methode 'set_state' non implementee pour l'estimateur")
       
    def get_estimation(self):
       return self._xest.copy(), self._t
+   
+   def get_estimation_generator(self):
+      X,t = self.get_estimation()
+      for i in range(self.get_num_states()):
+         yield self._name_of_states[i], X[i,0]
       
    def comportement(self, mes, u, t):
       u'''Loi de comportement des capteurs. Doit mettre à jour self._xest et self._t
@@ -31,7 +42,7 @@ class AEstimateur (object):
          Date courante
          
       '''
-      raise SystemError(u"[ERREUR]Methode comportement non implementee pour l'estimateur '%s'" % self._name)
+      raise SystemError(u"[ERREUR]Methode 'comportement' non implementee pour l'estimateur")
       
       
 
@@ -39,8 +50,8 @@ class AEstimateur (object):
 # Définition de filtre de Kalman
 # =============================================
 class FiltreKalman (AEstimateur):
-   def __init__(self, name='kalman'):
-      AEstimateur.__init__(self, name)
+   def __init__(self, name_of_states):
+      AEstimateur.__init__(self, name_of_states)
       
    def set_matrices(self, F, B, H, Q, R, dt):
       self._F = F
@@ -73,6 +84,15 @@ class FiltreKalman (AEstimateur):
       K = self._P*self._H.T*S.I
       self._xest += K*y
       self._P = (np.matrix(np.eye(self._n)) - K*self._H)*self._P
+   
+   def getCovariance(self):
+      return self._P.copy()
+   
+   def getEcartsTypes(self, num_var=None):
+      if num_var is None:
+         return np.array([sqrt(self._P[i,i]) for i in range(self._n)])
+      else:
+         return sqrt(self._P[num_var,num_var])
       
    def comportement(self, mes, u, t):
       self._t = t + self._dt
@@ -82,9 +102,6 @@ class FiltreKalman (AEstimateur):
       
       
 def test_cte():
-   import matplotlib
-   matplotlib.use('tkagg')
-
    import numpy as np
    import matplotlib.pyplot as plt
    
@@ -141,9 +158,6 @@ def test_cte():
    plt.show()
    
 def test_ressort():
-   import matplotlib
-   matplotlib.use('tkagg')
-
    import numpy as np
    import matplotlib.pyplot as plt
    
@@ -223,9 +237,6 @@ def test_ressort():
    plt.show()
    
 def test_div():
-   import matplotlib
-   matplotlib.use('tkagg')
-
    import numpy as np
    import matplotlib.pyplot as plt
    
@@ -306,9 +317,147 @@ def test_div():
    
    plt.show()
    
+def test_div_ag():
+   import numpy as np
+   import matplotlib.pyplot as plt
+   
+   from Loggeur import Loggeur
+
+   log = Loggeur()
+   
+   fs = 100.
+   ns = 1000
+   
+   # Init système
+   A = 2*np.pi
+   K = 1.
+   w = A/fs
+   
+   # Init Kalman
+   F = np.matrix([[cosh(w)  , sinh(w)/A, 0.],
+                  [A*sinh(w), cosh(w)  , 0.],
+                  [0.       , 0.       , 1.]])
+   B = np.matrix([-K/A**2*(1. - cosh(w)), K/A*sinh(w), 0.]).T
+   H = np.matrix([[1., 0., 0.],
+                  [0., 1., 1.]])
+   Q = np.matrix(np.eye(3))*0
+   
+   std_ang = 5.
+   std_gyr = 1./10
+   biais_gyr = 1.
+   R = np.matrix(np.diag([std_ang,std_gyr])**2)
+   
+   # Init système
+   th = 10.
+   dth = 0.
+   
+   kal = FiltreKalman()
+   kal.set_matrices(F, B, H, Q, R, 1./fs)
+   kal.set_state(np.matrix([0.,0.,0.]).T, np.matrix(np.diag((1.,1.,1.)))/10., 0.)
+
+   x_cons = 5.
+   
+   Xint = 0.
+   for i in range(ns):
+      # MAJ commande
+      Xest,t = kal.get_estimation()
+      a = 5.
+      P = (3*a**2+A**2)/K
+      I = a**3/K
+      D = 3*a/K
+      u = -(P*(Xest[0,:]-x_cons) + I*Xint + D*Xest[1,:])
+      
+      # MAJ système
+      th2  =   cosh(w)*th + sinh(w)/A*dth - K/A**2*(1. - cosh(w))*u[0,0]
+      dth2 = A*sinh(w)*th +   cosh(w)*dth + K/A*sinh(w)*u[0,0]
+      th = th2
+      dth = dth2
+      
+      # Mesure
+      mes = np.matrix([th + np.random.normal()*std_ang, dth + biais_gyr + np.random.normal()*std_gyr]).T
+      
+      # MAJ Kalman
+      kal.comportement(mes, u, t)
+      
+      # MAJ Loggeur
+      Xest,t = kal.get_estimation()
+      th_est  = Xest[0,0]
+      dth_est = Xest[1,0]
+      biais_est = Xest[2,0]
+      
+      Xint += (th_est-x_cons)/fs
+      
+      log.log('t', t)
+      
+      log.log('th_mes', mes[0,0])
+      log.log('th', th)
+      log.log('th_est', th_est)
+      log.log('sig_th', kal.getEcartsTypes(0))
+      
+      log.log('dth_mes', mes[1,0])
+      log.log('dth', dth)
+      log.log('dth_est', dth_est)
+      log.log('sig_dth', kal.getEcartsTypes(1))
+      
+      log.log('biais', biais_gyr)
+      log.log('biais_est', biais_est)
+      log.log('sig_biais', kal.getEcartsTypes(2))
+   
+   print u"Biais gyro estimé : %.2f" % Xest[2,0]
+   print u"Covariance :", [sqrt(kal.getCovariance()[i,i]) for i in range(3)]
+   
+   fig = plt.figure()
+   
+   axe = fig.add_subplot(231)
+   axe.grid(True)
+   log.plot('t', 'th_est', axe, label=u'estimé', marker='o', linestyle='')
+   log.plot('t', 'th', axe, label=u'simu')
+   log.plot('t', 'th_mes', axe, label=u'mesuré', marker='+', linestyle='')
+   # log.plot('t', 'th_est-th', axe, label=u'simu')
+   axe.legend(loc='best')
+   
+   axe = fig.add_subplot(234, sharex=axe)
+   axe.grid(True)
+   log.plot('t', 'sig_th', axe, label=u'sigma th')
+   log.plot('t', 'th_est-th', axe, label=u'delta th')
+   axe.legend(loc='best')
+   axe.set_xlabel(u"Temps (s)")
+   
+   axe = fig.add_subplot(232)
+   axe.grid(True)
+   log.plot('t', 'dth_est', axe, label=u'estimé', marker='o', linestyle='')
+   log.plot('t', 'dth', axe, label=u'simu')
+   log.plot('t', 'dth_mes', axe, label=u'mesuré', marker='+', linestyle='')
+   # log.plot('t', 'th_est-th', axe, label=u'simu')
+   axe.legend(loc='best')
+   
+   axe = fig.add_subplot(235, sharex=axe)
+   axe.grid(True)
+   log.plot('t', 'sig_dth', axe, label=u'sigma dth')
+   log.plot('t', 'dth_est-dth', axe, label=u'delta dth')
+   axe.legend(loc='best')
+   axe.set_xlabel(u"Temps (s)")
+   
+   axe = fig.add_subplot(233)
+   axe.grid(True)
+   log.plot('t', 'biais_est', axe, label=u'estimé', marker='o', linestyle='')
+   log.plot('t', 'biais', axe, label=u'simu')
+   axe.legend(loc='best')
+   
+   axe = fig.add_subplot(236, sharex=axe)
+   axe.grid(True)
+   log.plot('t', 'sig_biais', axe, label=u'sigma biais')
+   log.plot('t', 'biais_est-biais', axe, label=u'delta biais')
+   axe.legend(loc='best')
+   axe.set_xlabel(u"Temps (s)")
+   
+   fig.tight_layout()
+   plt.show()
+   
 
 if __name__ == '__main__':
    # test_cte()
    # test_ressort()
-   test_div()
+   # test_div()
+   test_div_ag()
 

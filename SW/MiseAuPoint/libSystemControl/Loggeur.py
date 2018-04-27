@@ -11,34 +11,41 @@ import matplotlib.pyplot as plt
 
 
 class Loggeur (object):
+   @staticmethod
+   def rad_to_deg(x):
+      return x*180./np.pi
+      
    def __init__(self):
       self.reset()
    
    def reset(self):
       self._data = {}
       
-   def log(self, nom, t,val):
+   def log(self, nom, val):
       if nom in self._data.keys():
-         self._data[nom].append((t,val))
+         self._data[nom].append(val)
       else:
-         self._data[nom] = [(t,val)]
-      
-   def plot(self, nom, axe, **kwargs):
+         self._data[nom] = [val]
+         
+   def getValue(self, nom, fct_conv=lambda x:x):
       expr_fct = '(lambda '
       expr_arg = '('
-      t = None
       for k in self._data.keys():
-         if t is None:
-            t = zip(*self._data[k])[0]
          expr_fct += '''%s, ''' % (k,)
-         expr_arg += '''np.array(zip(*self._data['%s'])[1]),''' % (k,)
+         expr_arg += '''np.array(self._data['%s']),''' % (k,)
          
       expr_fct = expr_fct[:-2] + ':' + nom + ')'
       expr_arg = expr_arg[:-1] + ')'
       val = eval(expr_fct + expr_arg)
       
-      axe.plot(t,val, **kwargs)
-      axe.set_title(nom)
+      return val
+      
+   def plot(self, nom_x, nom_y, axe, **kwargs):
+      val_x = self.getValue(nom_x)
+      val_y = self.getValue(nom_y)
+      
+      axe.plot(val_x,val_y, **kwargs)
+      axe.set_title(nom_y)
       
       
       

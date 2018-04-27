@@ -11,12 +11,18 @@ from scipy import linalg as lin
 
 
 class ACapteur (object):
-   def __init__(self, name, moy, cov):
-      self._name = name
+   def __init__(self, name_of_mes, moy, cov):
+      self._name_of_mes = name_of_mes
       self._moy = moy.copy()
       self._cov = cov.copy()
-      self._cho = np.matrix(lin.cholesky(cov))
+      if lin.norm(cov) == 0:
+         self._cho = cov.copy()
+      else:
+         self._cho = np.matrix(lin.cholesky(cov))
    
+   def get_num_mes(self):
+      return len(self._moy)
+      
    def comportement(self, x, t):
       u'''Loi de comportement des capteurs
       
@@ -38,7 +44,15 @@ class ACapteur (object):
       bn = np.matrix(np.random.normal(size=len(z))).T
       bg = self._cho.T*bn + self._moy
       
-      return z + bg
+      self._mes = z + bg
+   
+   def get_mesurement(self):
+      return self._mes
+      
+   def get_mes_generator(self):
+      X = self.get_mesurement()
+      for i in range(self.get_num_mes()):
+         yield self._name_of_mes[i], X[i,0]
       
       
    
