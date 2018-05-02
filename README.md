@@ -10,4 +10,4 @@ CAO mécanique : [Modèle 3D sur OnShape.com](https://cad.onshape.com/documents/
 
 Google Drive : [Google Drive](https://drive.google.com/open?id=0Bw98CW0_fTNNWHY4WXpyajc5Wjg)
 
-Code python pour utiliser l'IMU : [Librairie IMU](https://github.com/micropython-IMU/micropython-mpu9x50]
+Code python pour utiliser l'IMU : [Librairie IMU](https://github.com/micropython-IMU/micropython-mpu9x50)
