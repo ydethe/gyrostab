@@ -1,57 +1,59 @@
-import socket
-import json
-import os
-import network
+import umatrix
+import ulinalg
+from math import exp, pi
 
+from libSystemControl.Estimateur import FiltreKalman
+from libSystemControl.Simulation import ASimulation
 
+from SystemeTest import SystemeTest
+from Capteur import Capteur
+from Controller import Controller
+   
+ 
+
+class Simulation (ASimulation):
+   def comportement(self, x, t):
+      return umatrix.matrix([[pi/180.*20]])
+      
+      
 def main():
+   # Cadence de calcul
+   fs = 100.
    
-   addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+   # Init système
+   lbda = 5.
+   sys = SystemeTest(lbda)
+   sys.set_state(umatrix.matrix([[-pi/4]]).T, 0.)
    
-   s = socket.socket()
-   s.bind(addr)
-   s.listen(1)
+   # Init Kalman
+   A = umatrix.matrix([[ exp(-lbda/fs), 0., 0.],
+                       [ 0.,    1., 0.],
+                       [ 0.,    0., 1.]])
+   B = umatrix.matrix([[1. - exp(-lbda/fs), 0., 0.]]).T
+   C = umatrix.matrix([[1.,    1., 0.],
+                       [-lbda, 0., 1.]])
+   D = umatrix.matrix([[0., lbda]]).T
+   Q = 0*ulinalg.eye(3)
+   std_pos = 0.00448355705097
+   std_vel = 0.0014239412603
+   R = umatrix.matrix([[std_pos**2, 0.],
+                       [0., std_vel**2]])
    
-   print('listening on', addr)
+   kal = FiltreKalman(['pos_est','biais_pos_est','biais_vel_est'])
+   kal.set_matrices(A,B,C,D, Q,R, 1./fs)
+   kal.set_state(umatrix.matrix([[0.,0.,0.]]).T, ulinalg.eye(3)/10., 0.)
    
-   tx = []
-   ty = []
-   x = 0.
-   while True:
-      cl, addr = s.accept()
-      print('client connected from', addr)
-      cl_file = cl.makefile('rwb', 0)
-      cmd = cl_file.readline().decode('ascii').split()
-      pth = cmd[1][1:]
-      if pth == '':
-         pth = 'template.html'
-         
-      while True:
-         line = cl_file.readline()
-         if not line or line == b'\r\n':
-            break
-      
-      if pth == 'data.json':
-         tx.append(x)
-         ty.append(random.random())
-         x += 1.
-         
-         data = {'label':'IMU','data': zip(tx,ty)}
-         response = json.dumps(data)
-      else:
-         print("Lecture de " + pth)
-         f = open(pth, 'r')
-         response = f.read()
-         f.close()
+   c = Capteur(lbda)
    
-      b_sent = 0
-      b_response = len(response)
-      while b_sent != b_response:
-         b_sent += cl.send(response[b_sent:])
-         
-      cl.close()
-      
+   ctrl = Controller(1./fs, sys)
+   
+   sim = Simulation(1./fs, ctrl, sys, c, kal)
+   
+   sim.simule(20.)
+   log = sim.get_loggeur()
+   
+   
+
 if __name__ == '__main__':
-   pass
-   # main()
-   
+   main()
+
