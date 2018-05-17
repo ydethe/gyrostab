@@ -11,3 +11,5 @@ CAO mécanique : [Modèle 3D sur OnShape.com](https://cad.onshape.com/documents/
 Google Drive : [Google Drive](https://drive.google.com/open?id=0Bw98CW0_fTNNWHY4WXpyajc5Wjg)
 
 Code python pour utiliser l'IMU : [Librairie IMU](https://github.com/micropython-IMU/micropython-mpu9x50) ou [Dépôt avec de la doc technique sur les filtres complémentaires](https://github.com/larsks/py-mpu6050)
+
+Optimisation code python : [Native Code Emitter](https://docs.micropython.org/en/latest/esp8266/reference/speed_python.html#the-native-code-emitter)
