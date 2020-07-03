@@ -1,4 +1,4 @@
-'''
+"""
 
 Part of the micro-linalg project to provide a small
 matrix / linear algebra package for Micropython (Python3)
@@ -24,7 +24,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 import math
 import umatrix
 
@@ -43,8 +43,9 @@ def eye(m, dtype=umatrix.ddtype):
         Z[i, i] = 1
     return Z
 
+
 def det_inv(x):
-    ''' Return (det(x) and inv(x))
+    """ Return (det(x) and inv(x))
 
         Operates on a copy of x
         Using elementary row operations convert X to an upper matrix
@@ -52,9 +53,9 @@ def det_inv(x):
         Continue to convert X to the identity matrix
         All the operation carried out on the original identity matrix
         makes it the inverse of X
-    '''
+    """
     if not x.is_square:
-        raise ValueError('Matrix must be square')
+        raise ValueError("Matrix must be square")
     else:
         # divide each row element by [0] to give a one in the first position
         # (may have to find a row to switch with if first element is 0)
@@ -119,14 +120,14 @@ def det_inv(x):
 
 
 def pinv(X):
-    ''' Calculates the pseudo inverse Adagger = (A'A)^-1.A' '''
+    """ Calculates the pseudo inverse Adagger = (A'A)^-1.A' """
     Xt = X.transpose()
     d, Z = det_inv(dot(Xt, X))
     return dot(Z, Xt)
 
 
 def dot(X, Y):
-    ''' Dot product '''
+    """ Dot product """
     if X.size(2) == Y.size(1):
         Z = []
         for k in range(X.size(1)):
@@ -134,14 +135,14 @@ def dot(X, Y):
                 Z.append(sum([X[k, i] * Y[i, j] for i in range(Y.size(1))]))
         return umatrix.matrix(Z, cstride=1, rstride=Y.size(2))
     else:
-        raise ValueError('shapes not aligned')
+        raise ValueError("shapes not aligned")
 
 
 def cross(X, Y, axis=1):
-    ''' Cross product
+    """ Cross product
         axis=1 Numpy default
         axis=0 MATLAB, Octave, SciLab default
-    '''
+    """
     if axis == 0:
         X = X.T
         Y = Y.T
@@ -151,8 +152,13 @@ def cross(X, Y, axis=1):
             for k in range(min(X.m, Y.m)):
                 z = X[k, 0] * Y[k, 1] - X[k, 1] * Y[k, 0]
                 if (X.n == 3) and (Y.n == 3):
-                    Z.append([X[k, 1] * Y[k, 2] - X[k, 2] * Y[k, 1],
-                              X[k, 2] * Y[k, 0] - X[k, 0] * Y[k, 2], z])
+                    Z.append(
+                        [
+                            X[k, 1] * Y[k, 2] - X[k, 2] * Y[k, 1],
+                            X[k, 2] * Y[k, 0] - X[k, 0] * Y[k, 2],
+                            z,
+                        ]
+                    )
                 else:
                     Z.append([z])
             if axis == 0:
@@ -160,14 +166,16 @@ def cross(X, Y, axis=1):
             else:
                 return umatrix.matrix(Z)
         else:
-            raise ValueError('shape mismatch')
+            raise ValueError("shape mismatch")
     else:
-        raise ValueError('incompatible dimensions for cross product'
-                         ' (must be 2 or 3)')
+        raise ValueError(
+            "incompatible dimensions for cross product" " (must be 2 or 3)"
+        )
 
-def eps(x = 0):
+
+def eps(x=0):
     # ref. numpy.spacing(), Octave/MATLAB eps() function
     if x:
-        return 2**(math.floor(math.log(abs(x))/math.log(2)))*umatrix.flt_eps
+        return 2 ** (math.floor(math.log(abs(x)) / math.log(2))) * umatrix.flt_eps
     else:
         return umatrix.flt_eps

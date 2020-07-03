@@ -16,15 +16,13 @@ from libSystemControl.Estimateur import FiltreKalman
 # =============================================
 # Définition des capteurs
 # =============================================
-class Capteur (ACapteur):
-   def __init__(self):
-      self.std_pos = 0.1
-      
-      moy = np.matrix([0.]).T
-      cov = np.matrix((np.diag([self.std_pos]))**2)
-      ACapteur.__init__(self, [u'pos_mes'], moy, cov)
-      
-   def comportement(self, x, t):
-      return x[0,:]
-      
-      
+class Capteur(ACapteur):
+    def __init__(self):
+        self.std_pos = 0.1
+
+        moy = np.matrix([0.0]).T
+        cov = np.matrix((np.diag([self.std_pos])) ** 2)
+        ACapteur.__init__(self, [u"pos_mes"], moy, cov)
+
+    def comportement(self, x, t):
+        return x[0, :]

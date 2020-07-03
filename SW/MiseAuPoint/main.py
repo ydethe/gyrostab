@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from SystemControl.Simulation import Simulation
-from SystemControl.Controller import PIDController
+from SystemControl.Controller import PIDController, LQRegulator
 from SystemControl.SetPoint import Step
 from SystemControl.Graphics import plotFromLogger
 
@@ -67,7 +67,7 @@ def main():
     dt = 0.1
     
     # Angle initial
-    th0 = np.pi/4
+    th0 = np.pi/50
     
     sys = PenduleGyro()
     sys.setInitialState(np.array([th0, 0., np.pi/2.]))
@@ -80,20 +80,30 @@ def main():
     
     cpt = Capteur()
    
-    a = 1.
-    P = -(3*a**2+sys.A)/sys.K
-    I = -a**3/sys.K
-    D = -3*a/sys.K
+    a = 2.
+    P = (3*a**2+sys.A)/sys.K
+    I = a**3/sys.K
+    D = 3*a/sys.K
     ctrl = PIDController("ctrl", name_of_outputs=["cmd"])
     ctrl.P = P
     ctrl.I = I
     ctrl.D = D
-
+    
+    # ctrl = LQRegulator("ctrl", name_of_outputs=["cmd"])
+    # ctrl.A = np.array([[0, 1], [sys.A, 0]])
+    # ctrl.B = np.array([[0],[sys.K]])
+    # ctrl.C = np.array([[1,0]])
+    # ctrl.D = np.array([[0]])
+    # ctrl.Q = np.eye(2)
+    # ctrl.R = np.eye(1)
+    # ctrl.computeGain()
+    
     # Init controleur
     x_cons = 0
     user = Step("spt", cons=np.array([x_cons]), name_of_outputs=["step"])
    
-    tps = np.arange(0.0, 10., dt)
+    # tps = np.arange(0.0, 10., dt)
+    tps = np.arange(0.0, 5*dt, dt)
     sim = Simulation()
     
     sim.addElement(user)
@@ -107,7 +117,7 @@ def main():
     sim.linkElements(sys, cpt, src_data_name="output", dst_input_name="state")
     sim.linkElements(cpt, kal, src_data_name="output", dst_input_name="measurement")
     sim.linkElements(ctrl, kal, src_data_name="output", dst_input_name="command")
-    sim.linkElements(kal, ctrl, src_data_name="state", dst_input_name="estimation")
+    sim.linkElements(kal, ctrl, src_data_name="state[0:2]", dst_input_name="estimation")
 
     sim.simulate(tps)
     log = sim.getLogger()

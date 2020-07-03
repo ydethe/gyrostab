@@ -39,15 +39,16 @@ class PenduleGyro (ASystem):
         D = ((6*self.J-self.hauteur**2*masse)*H2-2*self.OB**2*self.hauteur**2*masse)/(6*H2)
         self.createParameter('A', self.masse_tot*self.OG*self.g0/D)
         self.createParameter('K', -masse*self.omega*H2/(D*2))
+        # th" = A.th + K.u
         
-    def jacobian(self, t: float, x: np.array, u: np.array) -> np.array:
-        T, dT, P = x
-        u, = u
-        return np.matrix([
-           [0,	1,	0],
-           [(12*self.masse_tot*self.OG*cos(T)*self.g0)/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J),	-((6*np.pi*cos(P)*self.hauteur*self.r2**4-2*np.pi*cos(P)*self.hauteur**3*self.r2**2-6*np.pi*cos(P)*self.hauteur*self.r1**4+2*np.pi*cos(P)*self.hauteur**3*self.r1**2)*self.rho*u)/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J),	((6*np.pi*cos(P)*sin(P)*self.hauteur*self.r2**4-2*np.pi*cos(P)*sin(P)*self.hauteur**3*self.r2**2-6*np.pi*cos(P)*sin(P)*self.hauteur*self.r1**4+2*np.pi*cos(P)*sin(P)*self.hauteur**3*self.r1**2)*self.rho*(((6*np.pi*self.hauteur*self.omega+6*np.pi*cos(P)*dT*self.hauteur)*self.r2**4-2*np.pi*cos(P)*dT*self.hauteur**3*self.r2**2+(-6*np.pi*self.hauteur*self.omega-6*np.pi*cos(P)*dT*self.hauteur)*self.r1**4+2*np.pi*cos(P)*dT*self.hauteur**3*self.r1**2)*self.rho*u-12*self.masse_tot*self.OG*sin(T)*self.g0))/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J)**2-((-6*np.pi*sin(P)*dT*self.hauteur*self.r2**4+2*np.pi*sin(P)*dT*self.hauteur**3*self.r2**2+6*np.pi*sin(P)*dT*self.hauteur*self.r1**4-2*np.pi*sin(P)*dT*self.hauteur**3*self.r1**2)*self.rho*u)/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J)],
-           [0,	0,	-(cos(P)*u)/sin(P)**2]]
-        )
+    # def jacobian(self, t: float, x: np.array, u: np.array) -> np.array:
+        # T, dT, P = x
+        # u, = u
+        # return np.matrix([
+           # [0,	1,	0],
+           # [(12*self.masse_tot*self.OG*cos(T)*self.g0)/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J),	-((6*np.pi*cos(P)*self.hauteur*self.r2**4-2*np.pi*cos(P)*self.hauteur**3*self.r2**2-6*np.pi*cos(P)*self.hauteur*self.r1**4+2*np.pi*cos(P)*self.hauteur**3*self.r1**2)*self.rho*u)/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J),	((6*np.pi*cos(P)*sin(P)*self.hauteur*self.r2**4-2*np.pi*cos(P)*sin(P)*self.hauteur**3*self.r2**2-6*np.pi*cos(P)*sin(P)*self.hauteur*self.r1**4+2*np.pi*cos(P)*sin(P)*self.hauteur**3*self.r1**2)*self.rho*(((6*np.pi*self.hauteur*self.omega+6*np.pi*cos(P)*dT*self.hauteur)*self.r2**4-2*np.pi*cos(P)*dT*self.hauteur**3*self.r2**2+(-6*np.pi*self.hauteur*self.omega-6*np.pi*cos(P)*dT*self.hauteur)*self.r1**4+2*np.pi*cos(P)*dT*self.hauteur**3*self.r1**2)*self.rho*u-12*self.masse_tot*self.OG*sin(T)*self.g0))/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J)**2-((-6*np.pi*sin(P)*dT*self.hauteur*self.r2**4+2*np.pi*sin(P)*dT*self.hauteur**3*self.r2**2+6*np.pi*sin(P)*dT*self.hauteur*self.r1**4-2*np.pi*sin(P)*dT*self.hauteur**3*self.r1**2)*self.rho*u)/(((3*np.pi*sin(P)**2-6*np.pi)*self.hauteur*self.r2**4+(-np.pi*sin(P)**2*self.hauteur**3-12*np.pi*self.OB**2*self.hauteur)*self.r2**2+(6*np.pi-3*np.pi*sin(P)**2)*self.hauteur*self.r1**4+(np.pi*sin(P)**2*self.hauteur**3+12*np.pi*self.OB**2*self.hauteur)*self.r1**2)*self.rho+12*self.J)],
+           # [0,	0,	-(cos(P)*u)/sin(P)**2]]
+        # )
    
     def transition(self, t: float, x: np.array, u: np.array) -> np.array:
         th = x[0]

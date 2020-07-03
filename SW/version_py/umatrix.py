@@ -1,4 +1,4 @@
-'''
+"""
 
 Part of the micro-linalg project to provide a small
 matrix / linear algebra package for MicroPython (Python3)
@@ -24,7 +24,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 import sys
 
@@ -35,16 +35,15 @@ flt_eps = 1
 
 
 class matrix(object):
-
     def __init__(self, data, cstride=0, rstride=0, dtype=None):
-        ''' Builds a matrix representation of 'data'.
+        """ Builds a matrix representation of 'data'.
             'data' can be a list (columns) of lists (rows)
             [[1,2,3],[4,5,6]] or
             a simple list organized as determined by rstride and cstride:
             [1,2,3,4,5,6] cstride=1, rstride=3.
             Elements will be of highest type included in 'data' or
             'dtype' can be used to force the type.
-        '''
+        """
         if cstride != 0:
             if cstride == 1:
                 self.n = rstride
@@ -63,10 +62,9 @@ class matrix(object):
             else:  # it is a list
                 self.m = len(data)
                 # is data[0] a list
-                if (type(data[0]) == list):
+                if type(data[0]) == list:
                     self.n = len(data[0])
-            self.data = [data[i][j]
-                         for i in range(self.m) for j in range(self.n)]
+            self.data = [data[i][j] for i in range(self.m) for j in range(self.n)]
             self.cstride = 1
             self.rstride = self.n
         # ensure all elements are of the same type
@@ -76,7 +74,7 @@ class matrix(object):
             if dtype in stypes:
                 self.dtype = dtype
             else:
-                raise TypeError('unsupported type', dtype)
+                raise TypeError("unsupported type", dtype)
         self.data = [self.dtype(i) for i in self.data]
 
     def __len__(self):
@@ -87,7 +85,7 @@ class matrix(object):
             res = all([self.data[i] == other.data[i] for i in range(self.size())])
             return res and (self.shape == other.shape)
         else:
-            raise ValueError('shapes not equal')
+            raise ValueError("shapes not equal")
 
     def __ne__(self, other):
         return not __eq__(other)
@@ -102,11 +100,11 @@ class matrix(object):
         return self
 
     def __next__(self):
-        '''
+        """
         Returns a matrix if m > 1
         else the next numeric element of the vector.
         (Numpy returns vectors if selected via slice)
-        '''
+        """
         if self.cur >= self.cnt_lim:
             raise StopIteration
         self.cur = self.cur + 1
@@ -117,13 +115,16 @@ class matrix(object):
 
     def slice_to_offset(self, r0, r1, c0, c1):
         # check values and limit them
-        nd = [self.data[i * self.rstride + j * self.cstride]
-              for i in range(r0, r1) for j in range(c0, c1)]
+        nd = [
+            self.data[i * self.rstride + j * self.cstride]
+            for i in range(r0, r1)
+            for j in range(c0, c1)
+        ]
         return matrix(nd, cstride=1, rstride=(c1 - c0))
 
     def slice_indices(self, index, axis=0):
         # handles the unsupported slice.indices() method in uPy.
-        # If implemented: 
+        # If implemented:
         #     midx = index.indices(self.m)
         # should work.
         if isinstance(index.start, type(None)):
@@ -154,7 +155,7 @@ class matrix(object):
                 s1, p1 = self.slice_indices(index[1], 1)
         elif type(index) == list:
             # list of indices etc
-            raise NotImplementedError('Fancy indexing')
+            raise NotImplementedError("Fancy indexing")
         else:
             # type is int? This will default to returning a row
             s0 = index
@@ -172,7 +173,7 @@ class matrix(object):
     def __setitem__(self, index, val):
         if type(index) != tuple:
             # need to make it a slice without the slice function
-            raise NotImplementedError('Need to use the slice [1,:] format.')
+            raise NotImplementedError("Need to use the slice [1,:] format.")
         # int and int => single entry gets changed
         # combinations of int and slice => row and columns take on elements from val
         if isinstance(index[0], int):
@@ -190,13 +191,13 @@ class matrix(object):
         elif type(val) not in [list, tuple]:
             val = [val]
         if not all([type(i) in stypes for i in val]):
-            raise ValueError('Non numeric entry')
+            raise ValueError("Non numeric entry")
         else:
             # assign list values wrapping as necessary to fill destination
             k = 0
             for i in range(s0, p0):
                 for j in range(s1, p1):
-                    self.data[i * self.rstride + j * self.cstride] = (self.dtype(val[k]))
+                    self.data[i * self.rstride + j * self.cstride] = self.dtype(val[k])
                     k = (k + 1) % len(val)
 
     # there is also __delitem__
@@ -208,60 +209,60 @@ class matrix(object):
         l = 0
         for i in self.data:
             l = max(l, len(repr(i)))
-        s = 'mat(['
+        s = "mat(["
         r = 0
         for i in range(self.m):
             c = 0
-            s = s + '['
+            s = s + "["
             for j in range(self.n):
                 s1 = repr(self.data[r + c])
-                s = s + s1 + ' ' * (l - len(s1))
-                if (j < (self.n - 1)):
-                    s = s + ', '
+                s = s + s1 + " " * (l - len(s1))
+                if j < (self.n - 1):
+                    s = s + ", "
                 c = c + self.cstride
-            if (i < (self.m - 1)):
-                s = s + '],\n     '
+            if i < (self.m - 1):
+                s = s + "],\n     "
             else:
-                s = s + ']'
+                s = s + "]"
             r = r + self.rstride
-        s = s + '])'
+        s = s + "])"
         return s
 
     # Reflected operations are not yet implemented in MicroPython
     # __rmul__ for example will not be invoked
 
     def __neg__(self):
-        ndat =[self.data[i] * (-1) for i in range(len(self.data))]
+        ndat = [self.data[i] * (-1) for i in range(len(self.data))]
         return matrix(ndat, cstride=self.cstride, rstride=self.rstride)
 
     def __do_op__(self, a, b, op):
-        if op == '+':
-            return (a + b)
-        elif op == '-':
-            return (a - b)
-        elif op == '*':
-            return (a * b)
-        elif op == '**':
-            return (a ** b)
-        elif op == '/':
+        if op == "+":
+            return a + b
+        elif op == "-":
+            return a - b
+        elif op == "*":
+            return a * b
+        elif op == "**":
+            return a ** b
+        elif op == "/":
             try:
-                return (a / b)
+                return a / b
             except ZeroDivisionError:
-                raise ZeroDivisionError('division by zero')
-        elif op == '//':
+                raise ZeroDivisionError("division by zero")
+        elif op == "//":
             try:
-                return (a // b)
+                return a // b
             except ZeroDivisionError:
-                raise ZeroDivisionError('division by zero')
+                raise ZeroDivisionError("division by zero")
         else:
-            raise NotImplementedError('Unknown operator ', op)
+            raise NotImplementedError("Unknown operator ", op)
 
     def __OP__(self, a, op):
         if type(a) in stypes:
             # matrix - scaler elementwise operation
             ndat = [self.__do_op__(self.data[i], a, op) for i in range(len(self.data))]
             return matrix(ndat, cstride=self.cstride, rstride=self.rstride)
-        elif (type(a) == list):
+        elif type(a) == list:
             # matrix - list elementwise operation
             # hack - convert list to matrix and resubmit then it gets handled below
             # if self.n = 1 try transpose otherwise broadcast error to match numpy
@@ -270,15 +271,19 @@ class matrix(object):
             elif len(a) == self.n:
                 return self.__OP__(matrix([a]), op)
             else:
-                raise ValueError('could not be broadcast')
-        elif (type(a) == matrix):
+                raise ValueError("could not be broadcast")
+        elif type(a) == matrix:
             if (self.m == a.m) and (self.n == a.n):
                 # matrix - matrix elementwise operation
                 # use matrix indices to handle views
-                ndat = [self.__do_op__(self[i, j], a[i, j], op) for i in range(self.m) for j in range(self.n)]
+                ndat = [
+                    self.__do_op__(self[i, j], a[i, j], op)
+                    for i in range(self.m)
+                    for j in range(self.n)
+                ]
                 return matrix(ndat, cstride=1, rstride=self.n)
             # generalize the following two elif for > 2 dimensions?
-            elif (self.m == a.m):
+            elif self.m == a.m:
                 # m==m n!=n => column-wise row operation
                 Y = self.copy()
                 for i in range(self.n):
@@ -286,7 +291,7 @@ class matrix(object):
                     for j in range(self.m):
                         Y[j, i] = self.__do_op__(Y[j, i], a[j, 0], op)
                 return Y
-            elif (self.n == a.n):
+            elif self.n == a.n:
                 # m!=m n==n => row-wise col operation
                 Y = self.copy()
                 for i in range(self.m):
@@ -295,26 +300,26 @@ class matrix(object):
                         Y[i, j] = self.__do_op__(Y[i, j], a[0, j], op)
                 return Y
             else:
-                raise ValueError('could not be broadcast')
-        raise NotImplementedError('__OP__ matrix + ', type(a))
+                raise ValueError("could not be broadcast")
+        raise NotImplementedError("__OP__ matrix + ", type(a))
 
     def __add__(self, a):
-        ''' matrix - scaler elementwise addition'''
-        return self.__OP__(a, '+')
+        """ matrix - scaler elementwise addition"""
+        return self.__OP__(a, "+")
 
     def __radd__(self, a):
-        ''' scaler - matrix elementwise addition'''
-        ''' commutative '''
+        """ scaler - matrix elementwise addition"""
+        """ commutative """
         return self.__add__(a)
 
     def __sub__(self, a):
-        ''' matrix - scaler elementwise subtraction '''
+        """ matrix - scaler elementwise subtraction """
         if type(a) in estypes:
             return self.__add__(-a)
-        raise NotImplementedError('__sub__ matrix -', type(a))
+        raise NotImplementedError("__sub__ matrix -", type(a))
 
     def __rsub__(self, a):
-        ''' scaler - matrix elementwise subtraction '''
+        """ scaler - matrix elementwise subtraction """
         self = -self
         return self.__add__(a)
 
@@ -326,38 +331,39 @@ class matrix(object):
                     Z.append(sum([self[k, i] * a[i, j] for i in range(a.size(1))]))
             return matrix(Z, cstride=1, rstride=a.size(2))
         else:
-            raise ValueError('shapes not aligned')
+            raise ValueError("shapes not aligned")
 
     def __rmul__(self, a):
-        ''' scaler * matrix elementwise multiplication
+        """ scaler * matrix elementwise multiplication
             commutative
-        '''
-        return self.__OP__(a, '*')
+        """
+        return self.__OP__(a, "*")
 
     def __truediv__(self, a):
-        ''' matrix / scaler elementwise division '''
-        return self.__OP__(a, '/')
+        """ matrix / scaler elementwise division """
+        return self.__OP__(a, "/")
 
     def __rtruediv__(self, a):
-        ''' scaler / matrix elementwise division '''
-        return self.__OP__(a, '/')
+        """ scaler / matrix elementwise division """
+        return self.__OP__(a, "/")
 
     def __floordiv__(self, a):
-        ''' matrix // scaler elementwise integer division '''
-        return self.__OP__(a, '//')
+        """ matrix // scaler elementwise integer division """
+        return self.__OP__(a, "//")
 
     def __rfloordiv__(self, a):
-        ''' scaler // matrix elementwise integer division '''
-        return self.__OP__(a, '//')
+        """ scaler // matrix elementwise integer division """
+        return self.__OP__(a, "//")
 
     # def __pow__(self, a):
-        # ''' matrix ** scaler elementwise power '''
-        # return self.__OP__(a, '**')
+    # ''' matrix ** scaler elementwise power '''
+    # return self.__OP__(a, '**')
 
     def copy(self):
         """ Return a copy of matrix, not just a view """
-        return matrix([i for i in self.data],
-                      cstride=self.cstride, rstride=self.rstride)
+        return matrix(
+            [i for i in self.data], cstride=self.cstride, rstride=self.rstride
+        )
 
     def size(self, axis=0):
         """ 0 entries
@@ -378,7 +384,7 @@ class matrix(object):
             self.cstride = 1
             self.rstride = self.n
         else:
-            raise ValueError('total size of new matrix must be unchanged')
+            raise ValueError("total size of new matrix must be unchanged")
         return self
 
     @property
@@ -404,7 +410,9 @@ class matrix(object):
         return X
 
     def reciprocal(self, n=1):
-        return matrix([n / i for i in self.data], cstride=self.cstride, rstride=self.rstride)
+        return matrix(
+            [n / i for i in self.data], cstride=self.cstride, rstride=self.rstride
+        )
 
     def apply(self, func, *args, **kwargs):
         """ call a scalar function on each element, returns a new matrix
@@ -415,21 +423,28 @@ class matrix(object):
             y = x.apply(lambda a,b: a>b, 5) # equivalent to y = x > 5
             y = x.apply(operators.gt, 5)    # equivalent to y = x > 5 (not in micropython)
         """
-        return matrix([func(i, *args, **kwargs) for i in self.data],
-                      cstride=self.cstride, rstride=self.rstride)
+        return matrix(
+            [func(i, *args, **kwargs) for i in self.data],
+            cstride=self.cstride,
+            rstride=self.rstride,
+        )
 
-def matrix_isclose(x, y, rtol=1E-05, atol=flt_eps):
-    ''' Returns a matrix indicating equal elements within tol'''
+
+def matrix_isclose(x, y, rtol=1e-05, atol=flt_eps):
+    """ Returns a matrix indicating equal elements within tol"""
     for i in range(x.size()):
         try:
-            data = [abs(x.data[i] - y.data[i]) <= atol+rtol*abs(y.data[i]) for i in range(len(x.data))]
+            data = [
+                abs(x.data[i] - y.data[i]) <= atol + rtol * abs(y.data[i])
+                for i in range(len(x.data))
+            ]
         except (AttributeError, IndexError):
             data = [False for i in range(len(x.data))]
     return matrix(data, cstride=x.cstride, rstride=x.rstride, dtype=bool)
 
 
 def matrix_equal(x, y, tol=0):
-    ''' Matrix equality test with tolerance same shape'''
+    """ Matrix equality test with tolerance same shape"""
     res = False
     if type(y) == matrix:
         if x.shape == y.shape:
@@ -438,26 +453,28 @@ def matrix_equal(x, y, tol=0):
 
 
 def matrix_equiv(x, y):
-    ''' Returns a boolean indicating if X and Y share the same data and are broadcastable'''
+    """ Returns a boolean indicating if X and Y share the same data and are broadcastable"""
     res = False
     if type(y) == matrix:
         if x.size() == y.size():
             res = all([x.data[i] == y.data[i] for i in range(len(x.data))])
     return res
 
+
 def fp_eps():
-    ''' Determine floating point resolution '''
+    """ Determine floating point resolution """
     e = 1
     while 1 + e > 1:
         e = e / 2
     return 2 * e
 
+
 flt_eps = fp_eps()
 try:
-    if sys.implementation.name == 'micropython' and sys.platform == 'linux':
+    if sys.implementation.name == "micropython" and sys.platform == "linux":
         # force this as there seems to be some interaction with
         # some operations done using the C library with a smaller epsilon (doubles)
-        flt_eps = 1.19E-7   # single precision IEEE 2**-23  double 2.22E-16 == 2**-52
+        flt_eps = 1.19e-7  # single precision IEEE 2**-23  double 2.22E-16 == 2**-52
 except:
     pass
 # Determine supported types
