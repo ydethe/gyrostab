@@ -4,13 +4,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from libSystemControl.Loggeur import Loggeur
-from libSystemControl.Simulation import ASimulation
+from SystemControl.Simulation import Simulation
+from SystemControl.Controller import PIDController
+from SystemControl.SetPoint import Step
+from SystemControl.Graphics import plotFromLogger
 
 from FiltreKalmanGyro import FiltreKalmanGyro
 from PenduleGyro import PenduleGyro
 from Capteur import Capteur
-from Controller import Controller
 
 
 def valide_modele_kal():
@@ -60,106 +61,129 @@ def valide_modele_kal():
    
    plt.show()
    
-   
-class Simulation (ASimulation):
-   def comportement(self, x, t):
-      return np.matrix([[0.*np.pi/180.]])
-      
+
 def main():
-   # Pas de temps
-   dt = 0.1
+    # Pas de temps
+    dt = 0.1
+    
+    # Angle initial
+    th0 = np.pi/4
+    
+    sys = PenduleGyro()
+    sys.setInitialState(np.array([th0, 0., np.pi/2.]))
+    
+    kal = FiltreKalmanGyro()
+    kal.setInitialState(np.array([th0,0.,0.]))
+    kal.setInitialStateCovariance(np.diag((1.,1.,1.))/10.)
+    kal.KA = sys.A
+    kal.KU = sys.K
+    
+    cpt = Capteur()
    
-   # Angle initial
-   th0 = np.pi
+    a = 1.
+    P = -(3*a**2+sys.A)/sys.K
+    I = -a**3/sys.K
+    D = -3*a/sys.K
+    ctrl = PIDController("ctrl", name_of_outputs=["cmd"])
+    ctrl.P = P
+    ctrl.I = I
+    ctrl.D = D
+
+    # Init controleur
+    x_cons = 0
+    user = Step("spt", cons=np.array([x_cons]), name_of_outputs=["step"])
    
-   sys = PenduleGyro()
-   sys.set_state(np.matrix([th0, 0., np.pi/2.]).T, 0.)
-   
-   kal = FiltreKalmanGyro()
-   kal.set_state(np.matrix([th0,0.,0.]).T, np.matrix(np.diag((1.,1.,1.)))/10., 0.)
-   
-   kal.set_matrices(sys.A, sys.K, dt)
-   
-   c = Capteur()
-   
-   ctrl = Controller(dt, sys)
-   
-   sim = Simulation(dt, ctrl, sys, c, kal)
-   
-   sim.simule(20.)
-   log = sim.get_loggeur()
-   t = log.getValue('t')
-   u = log.getValue('cmd')
-   ps = log.getValue('ps_sim')
-   dpsi = u/np.sin(ps)
-   
-   # =============================================
-   # Tracés
-   # =============================================
-   fig = plt.figure()
-   
-   axe = fig.add_subplot(211)
-   axe.grid(True)
-   log.plot('t', 'ps_sim', axe, label=u'psi')
-   axe.legend(loc='best')
-   
-   axe = fig.add_subplot(212, sharex=axe)
-   axe.grid(True)
-   axe.plot(t, dpsi, label=u'dpsi')
-   axe.legend(loc='best')
-   axe.set_xlabel(u"Temps (s)")
-   
-   fig.tight_layout()
-   
-   
-   fig = plt.figure()
-   
-   axe = fig.add_subplot(231)
-   axe.grid(True)
-   log.plot('t', 'th_est', axe, label=u'estimé', marker='o', linestyle='')
-   log.plot('t', 'th_sim', axe, label=u'simu')
-   log.plot('t', 'th_mes', axe, label=u'mesuré', marker='+', linestyle='')
-   axe.legend(loc='best')
-   
-   axe = fig.add_subplot(234, sharex=axe)
-   axe.grid(True)
-   # log.plot('t', 'sig_th', axe, label=u'sigma th_sim')
-   log.plot('t', 'th_est-th_sim', axe, label=u'delta th_sim')
-   axe.legend(loc='best')
-   axe.set_xlabel(u"Temps (s)")
-   
-   axe = fig.add_subplot(232)
-   axe.grid(True)
-   log.plot('t', 'dth_est', axe, label=u'estimé', marker='o', linestyle='')
-   log.plot('t', 'dth_sim', axe, label=u'simu')
-   log.plot('t', 'dth_mes', axe, label=u'mesuré', marker='+', linestyle='')
-   axe.legend(loc='best')
-   
-   axe = fig.add_subplot(235, sharex=axe)
-   axe.grid(True)
-   # log.plot('t', 'sig_dth', axe, label=u'sigma dth_sim')
-   log.plot('t', 'dth_est-dth_sim', axe, label=u'delta dth_sim')
-   axe.legend(loc='best')
-   axe.set_xlabel(u"Temps (s)")
-   
-   axe = fig.add_subplot(233)
-   axe.grid(True)
-   log.plot('t', 'biais_est', axe, label=u'estimé', marker='o', linestyle='')
-   # log.plot('t', 'biais', axe, label=u'simu')
-   axe.legend(loc='best')
-   
-   axe = fig.add_subplot(236, sharex=axe)
-   axe.grid(True)
-   # log.plot('t', 'sig_biais', axe, label=u'sigma biais')
-   # log.plot('t', 'biais_est-biais', axe, label=u'delta biais')
-   axe.legend(loc='best')
-   axe.set_xlabel(u"Temps (s)")
-   
-   fig.tight_layout()
-   plt.show()
+    tps = np.arange(0.0, 10., dt)
+    sim = Simulation()
+    
+    sim.addElement(user)
+    sim.addElement(ctrl)
+    sim.addElement(sys)
+    sim.addElement(cpt)
+    sim.addElement(kal)
+    
+    sim.linkElements(user, ctrl, src_data_name="output", dst_input_name="setpoint")
+    sim.linkElements(ctrl, sys, src_data_name="output", dst_input_name="command")
+    sim.linkElements(sys, cpt, src_data_name="output", dst_input_name="state")
+    sim.linkElements(cpt, kal, src_data_name="output", dst_input_name="measurement")
+    sim.linkElements(ctrl, kal, src_data_name="output", dst_input_name="command")
+    sim.linkElements(kal, ctrl, src_data_name="state", dst_input_name="estimation")
+
+    sim.simulate(tps)
+    log = sim.getLogger()
+    
+    t = log.getValue('t')
+    u = log.getValue('cmd')
+    ps = log.getValue('ps_sim')
+    dpsi = u/np.sin(ps)
+    
+    # =============================================
+    # Tracés
+    # =============================================
+    fig = plt.figure()
+    
+    axe = fig.add_subplot(211)
+    axe.grid(True)
+    plotFromLogger(log, 't', 'ps_sim', axe, label=u'psi')
+    axe.legend(loc='best')
+    
+    axe = fig.add_subplot(212, sharex=axe)
+    axe.grid(True)
+    axe.plot(t, dpsi, label=u'dpsi')
+    axe.legend(loc='best')
+    axe.set_xlabel(u"Temps (s)")
+    
+    fig.tight_layout()
+    
+    
+    fig = plt.figure()
+    
+    axe = fig.add_subplot(231)
+    axe.grid(True)
+    plotFromLogger(log, 't', 'th_est', axe, label=u'estimé', marker='o', linestyle='')
+    plotFromLogger(log, 't', 'th_sim', axe, label=u'simu')
+    plotFromLogger(log, 't', 'th_mes', axe, label=u'mesuré', marker='+', linestyle='')
+    axe.legend(loc='best')
+    
+    axe = fig.add_subplot(234, sharex=axe)
+    axe.grid(True)
+    # plotFromLogger(log, 't', 'sig_th', axe, label=u'sigma th_sim')
+    plotFromLogger(log, 't', 'th_est-th_sim', axe, label=u'delta th_sim')
+    axe.legend(loc='best')
+    axe.set_xlabel(u"Temps (s)")
+    
+    axe = fig.add_subplot(232)
+    axe.grid(True)
+    plotFromLogger(log, 't', 'dth_est', axe, label=u'estimé', marker='o', linestyle='')
+    plotFromLogger(log, 't', 'dth_sim', axe, label=u'simu')
+    plotFromLogger(log, 't', 'dth_mes', axe, label=u'mesuré', marker='+', linestyle='')
+    axe.legend(loc='best')
+    
+    axe = fig.add_subplot(235, sharex=axe)
+    axe.grid(True)
+    # plotFromLogger(log, 't', 'sig_dth', axe, label=u'sigma dth_sim')
+    plotFromLogger(log, 't', 'dth_est-dth_sim', axe, label=u'delta dth_sim')
+    axe.legend(loc='best')
+    axe.set_xlabel(u"Temps (s)")
+    
+    axe = fig.add_subplot(233)
+    axe.grid(True)
+    plotFromLogger(log, 't', 'biais_est', axe, label=u'estimé', marker='o', linestyle='')
+    # plotFromLogger(log, 't', 'biais', axe, label=u'simu')
+    axe.legend(loc='best')
+    
+    axe = fig.add_subplot(236, sharex=axe)
+    axe.grid(True)
+    # plotFromLogger(log, 't', 'sig_biais', axe, label=u'sigma biais')
+    # plotFromLogger(log, 't', 'biais_est-biais', axe, label=u'delta biais')
+    axe.legend(loc='best')
+    axe.set_xlabel(u"Temps (s)")
+    
+    fig.tight_layout()
+    plt.show()
    
 
 if __name__ == '__main__':
-   main()
-   # valide_modele_kal()
+    main()
+    # valide_modele_kal()
 
