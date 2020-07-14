@@ -1,8 +1,3 @@
-#! /bin/env python2
-# -*- coding: utf-8 -*-
-
-import collections
-
 import numpy as np
 from numpy import cos, sin, sqrt, dot
 import scipy.linalg as lin
