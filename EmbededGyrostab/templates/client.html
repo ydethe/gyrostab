@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="../static/js/epoch.min.js"></script>
+  <script src="../static/js/jquery.flightindicators.min.js"></script>
+  <script src="../static/js/gyrostab-servo.js"></script>
+  <script src="../static/js/gyrostab-epochchart.js"></script>
+  <link rel="stylesheet" type="text/css" href="../static/css/epoch.min.css">
+  <link rel="stylesheet" type="text/css" href="../static/css/client.css">
+  <link rel="stylesheet" type="text/css" href="../static/css/flightindicators.css" />
+  <link rel="icon" type="image/png" href="../static/img/gyroscope.png"/>
+  <!--gyroscope.png copyright: Gyroscope By Arthur Shlain, from the Noun Project-->
+  </head>
+  <body>
+	<div>
+		<p> Add a Chart</p>
+		<select id="AddChartEndPointSelect">
+		</select>
+		<input type="button" id="AddChartButton" value="Add" />
+		<p id="AddChartButtonDone"></p>
+	</div>
+	<table id="ChartTable" style="width:100%">
+	</table>
+	<div><p></p></div>
+	<div>
+		<input type="button" id="StartStopIndicator" value="Show Flight Indicator" />
+		<div id="FlightIndicator">
+			<span id="attitude"></span>
+			<span id="heading"></span>
+		</div>
+	</div>
+	<div><p></p></div>
+	<div>
+		<input type="button" id="CalibrateGyro" value="Calibrate Gyrometer" />
+		<span id="GyroCalibrationStatus"></span>
+	</div>
+	<div>
+		<input type="button" id="CalibrateAccel" value="Calibrate Accelerometer" />
+		<span id="AccelCalibrationStatus"></span>
+	</div>
+	<div><p></p></div>
+	  <div>
+		<p>Servo calibration :</p>
+		<input type="text" id="axis" placeholder="axis" value="x"/>
+		<input type="text" id="pinNumber" placeholder="pinNumber" value="11"/>
+		<input type="number" id="valueMinPulse" placeholder="valueMinPulse" value="1200" min="500" max="2500"/>
+		<input type="number" id="valueMaxPulse" placeholder="valueMaxPulse" value="1800" min="500" max="2500"/>
+		<input type="number" id="valueMinAngle" placeholder="valueMinAngle" value="-80" min="-180" max="180"/>
+		<input type="number" id="valueMaxAngle" placeholder="valueMaxAngle" value="80" min="-180" max="180"/>
+		<input type="button" id="Calibrate" value="Calibrate" />
+		<p id="recalibration"></p>
+	  </div>
+	  <script src="../static/js/gyrostab-flightindicator.js"></script>
+  </body>
+</html>

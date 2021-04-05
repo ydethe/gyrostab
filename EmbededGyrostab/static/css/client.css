@@ -1,0 +1,23 @@
+table, th, td {
+    border: 1px solid black;
+}
+
+.centerCellP {
+	color: black;
+	text-align: center;
+}
+
+.caption_0 {
+	color: #1f77b4;
+	text-align: center;
+}
+
+.caption_1 {
+	color: #ff7f0e;
+	text-align: center;
+}
+
+.caption_2 {
+	color: #2ca02c;
+	text-align: center;
+}

@@ -1,0 +1,24 @@
+
+
+Installing Adafruit_GPIO
+for python2 : > pip install Adafruit_GPIO
+for python3 ; > pip3.2 install Adafruit_GPIO
+
+Activating I2C :
+> sudo raspi-config
+then : 5 Interface option
+then : P5 I2C Enable/Disable automatic loading
+then : Yes/Oui
+Then : Ok
+Then : Finish
+
+Use of ServoBlaster from PiBits : https://github.com/richardghirst/PiBits
+Installing Servo Blaster : 
+> git clone https://github.com/richardghirst/PiBits.git
+> cd PiBits/ServoBlaster/user/
+> sudo make install
+
+Get PythonSB.py from : https://github.com/jabelone/pythonSB
+
+Use of jQuery-Flight-Indicator from : https://github.com/sebmatton/jQuery-Flight-Indicators
+> git clone https://github.com/sebmatton/jQuery-Flight-Indicators
