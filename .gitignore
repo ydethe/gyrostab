@@ -1,9 +1,6 @@
 *.bak
 .vscode/
 results/
-docs/blocksim*.rst
-docs/modules.rst
-docs/examples/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -112,3 +109,4 @@ venv.bak/
 .mypy_cache/
 .DS_Store
 ._.DS_Store
+
